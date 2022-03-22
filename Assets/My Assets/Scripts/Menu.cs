@@ -35,7 +35,7 @@ public class Menu : MonoBehaviourPunCallbacks
 	public void SetScreen (GameObject screen)
 	{
 		mainScreen.SetActive( false );
-		mainScreen.SetActive( false );
+		lobbyScreen.SetActive( false );
 
 		screen.SetActive( true );
 	}
@@ -48,5 +48,55 @@ public class Menu : MonoBehaviourPunCallbacks
 	public void OnJoinRoomButton(TMP_InputField roomNameInput)
 	{
 		NetworkManager._instance.JoinRoom( roomNameInput.text );
+	}
+
+	public void OnPlayerNameUpdate(TMP_InputField playerNameInput)
+	{
+		PhotonNetwork.NickName = playerNameInput.text;
+	}
+
+	public override void OnJoinedRoom()
+	{
+		SetScreen( lobbyScreen );
+
+		photonView.RPC( "UpdateLobbyUI", RpcTarget.All );
+	}
+
+	public override void OnPlayerLeftRoom( Player otherPlayer )
+	{
+		UpdateLobbyUI();
+	}
+
+	[PunRPC]
+	public void UpdateLobbyUI()
+	{
+		playerListText.text = "";
+
+		//display all current players in lobby
+		foreach(Player player in PhotonNetwork.PlayerList)
+		{
+			playerListText.text += player.NickName + "\n";
+		}
+
+		// only host can start game
+		if(PhotonNetwork.IsMasterClient)
+		{
+			startGameButton.interactable = true;
+		}
+		else
+		{
+			startGameButton.interactable = false;
+		}
+	}
+
+	public void OnLeaveLobbyButton()
+	{
+		PhotonNetwork.LeaveRoom();
+		SetScreen( mainScreen );
+	}
+
+	public void OnStartGameButton()
+	{
+		NetworkManager._instance.photonView.RPC( "ChangeScene", RpcTarget.All, "Game" );
 	}
 }
