@@ -8,6 +8,7 @@ public class Unit : MonoBehaviour
     public int pieceNumber;
     public int xPos;
     public int yPos;
+	public GameObject selectionParticle;
 
 	private void OnCollisionEnter( Collision collision )
 	{
@@ -15,6 +16,4 @@ public class Unit : MonoBehaviour
 		xPos = collision.gameObject.GetComponent<MoveablePosition>().xPos;
 		yPos = collision.gameObject.GetComponent<MoveablePosition>().yPos;
 	}
-
-
 }
