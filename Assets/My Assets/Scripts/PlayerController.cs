@@ -43,13 +43,21 @@ public class PlayerController : MonoBehaviour
         ray = Camera.main.ScreenPointToRay( Input.mousePosition );
         if(Physics.Raycast(ray.origin, ray.direction, out hit))
         {
-            if( selectedObject != null && hit.collider.GetComponent<MoveablePosition>().gameObject )
+            if( selectedObject != null && hit.collider.GetComponent<MoveablePosition>())
             {
                 moveToPosition = hit.transform.gameObject;
                 movePos = hit.transform.GetComponent<MoveablePosition>();
                 selectedObject.transform.position = moveToPosition.transform.position;
                 selectedUnit.xPos = movePos.xPos;
                 selectedUnit.yPos = movePos.yPos;
+                selectedUnit.selectionParticle.SetActive( false );
+                selectedObject = null;
+                selectedUnit = null;
+                moveToPosition = null;
+                movePos = null;
+            }
+            else if( selectedObject != null && hit.collider.GetComponent<Unit>() == selectedUnit )
+            {
                 selectedUnit.selectionParticle.SetActive( false );
                 selectedObject = null;
                 selectedUnit = null;
