@@ -72,7 +72,7 @@ public class PlayerController : MonoBehaviour
 
     public void RollDice()
     {
-        rolledNumber = Random.Range( 1, 6 );
+        rolledNumber = Random.Range( 1, 7 );
 	}
 
 }
