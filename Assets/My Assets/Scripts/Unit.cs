@@ -8,6 +8,7 @@ public class Unit : MonoBehaviour
     public int pieceNumber;
     public int xPos;
     public int yPos;
+	public bool hasMoved = false;
 	public GameObject selectionParticle;
 
 	private void OnCollisionEnter( Collision collision )

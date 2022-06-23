@@ -30,12 +30,22 @@ public class PlayerController : MonoBehaviour
         if(selectedObject != null)
         {
             selectedUnit.selectionParticle.SetActive( true );
-            if( selectedUnit.pieceNumber == chosenNumber )
+            if( selectedUnit.pieceNumber == chosenNumber && !selectedUnit.hasMoved)
             {
                 stepsToMove = rolledNumber;
             }
-            else { stepsToMove = chosenNumber; }
+            else if(!selectedUnit.hasMoved){ stepsToMove = chosenNumber; }
 		}
+
+        if( selectedObject != null && stepsToMove <= 0 )
+        {
+            selectedUnit.selectionParticle.SetActive( false );
+            selectedObject = null;
+            selectedUnit = null;
+            moveToPosition = null;
+            movePos = null;
+            EndTurn();
+        }
     }
 
     private void OnClick()
@@ -43,20 +53,20 @@ public class PlayerController : MonoBehaviour
         ray = Camera.main.ScreenPointToRay( Input.mousePosition );
         if(Physics.Raycast(ray.origin, ray.direction, out hit))
         {
-            if( selectedObject != null && hit.collider.GetComponent<MoveablePosition>())
+            if( selectedObject != null && hit.collider.GetComponent<MoveablePosition>() && stepsToMove > 0)
             {
                 moveToPosition = hit.transform.gameObject;
                 movePos = hit.transform.GetComponent<MoveablePosition>();
-                selectedObject.transform.position = moveToPosition.transform.position;
-                selectedUnit.xPos = movePos.xPos;
-                selectedUnit.yPos = movePos.yPos;
-                selectedUnit.selectionParticle.SetActive( false );
-                selectedObject = null;
-                selectedUnit = null;
-                moveToPosition = null;
-                movePos = null;
+                if( selectedUnit.xPos + 1 == movePos.xPos || selectedUnit.xPos - 1 == movePos.xPos || selectedUnit.yPos + 1 == movePos.yPos || selectedUnit.yPos - 1 == movePos.yPos ) 
+                {
+                    selectedObject.transform.position = moveToPosition.transform.position;
+                    selectedUnit.xPos = movePos.xPos;
+                    selectedUnit.yPos = movePos.yPos;
+                    stepsToMove--;
+                    selectedUnit.hasMoved = true;
+                }
             }
-            else if( selectedObject != null && hit.collider.GetComponent<Unit>() == selectedUnit )
+            else if( selectedObject != null && hit.collider.GetComponent<Unit>() == selectedUnit && !selectedUnit.hasMoved)
             {
                 selectedUnit.selectionParticle.SetActive( false );
                 selectedObject = null;
@@ -80,7 +90,14 @@ public class PlayerController : MonoBehaviour
 
     public void RollDice()
     {
-        rolledNumber = Random.Range( 1, 7 );
+        if(selectedUnit == null)
+        {
+            rolledNumber = Random.Range( 1, 7 );
+        }
 	}
 
+    public void EndTurn() 
+    {
+        Debug.Log( "turn has been played" );
+    }
 }
