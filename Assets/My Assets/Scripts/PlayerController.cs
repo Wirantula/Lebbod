@@ -9,6 +9,8 @@ public class PlayerController : MonoBehaviour
     public int chosenNumber;
     public int rolledNumber;
     public int stepsToMove;
+    public bool onTurnStart = false;
+    public bool hasRolled = false;
     public GameObject[] ownedPieces;
     public GameObject selectedObject;
     private GameObject moveToPosition;
@@ -27,19 +29,21 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         if(Input.GetMouseButtonDown(0)){ OnClick(); }
-        if(selectedObject != null)
+        if(selectedObject != null && onTurnStart == true)
         {
-            selectedUnit.selectionParticle.SetActive( true );
+            
             if( selectedUnit.pieceNumber == chosenNumber && !selectedUnit.hasMoved)
             {
+                selectedUnit.selectionParticle.SetActive( true );
                 stepsToMove = rolledNumber;
             }
-            else if(!selectedUnit.hasMoved){ stepsToMove = chosenNumber; }
+            else if(!selectedUnit.hasMoved){ selectedUnit.selectionParticle.SetActive( true ); stepsToMove = chosenNumber;}
 		}
 
-        if( selectedObject != null && stepsToMove <= 0 )
+        if( selectedObject != null && stepsToMove <= 0 && onTurnStart == false)
         {
             selectedUnit.selectionParticle.SetActive( false );
+            selectedUnit.hasMoved = false;
             selectedObject = null;
             selectedUnit = null;
             moveToPosition = null;
@@ -57,13 +61,17 @@ public class PlayerController : MonoBehaviour
             {
                 moveToPosition = hit.transform.gameObject;
                 movePos = hit.transform.GetComponent<MoveablePosition>();
-                if( selectedUnit.xPos + 1 == movePos.xPos || selectedUnit.xPos - 1 == movePos.xPos || selectedUnit.yPos + 1 == movePos.yPos || selectedUnit.yPos - 1 == movePos.yPos ) 
+                if( (movePos.xPos - selectedUnit.xPos) + (movePos.yPos - selectedUnit.yPos) == 1 || ( movePos.xPos - selectedUnit.xPos ) + ( movePos.yPos - selectedUnit.yPos ) == -1 )
                 {
-                    selectedObject.transform.position = moveToPosition.transform.position;
-                    selectedUnit.xPos = movePos.xPos;
-                    selectedUnit.yPos = movePos.yPos;
-                    stepsToMove--;
-                    selectedUnit.hasMoved = true;
+                    if( selectedUnit.xPos + 1 == movePos.xPos || selectedUnit.xPos - 1 == movePos.xPos || selectedUnit.yPos + 1 == movePos.yPos || selectedUnit.yPos - 1 == movePos.yPos )
+                    {
+                        onTurnStart = false;
+                        selectedObject.transform.position = new Vector3( moveToPosition.transform.position.x , selectedObject.transform.position.y, moveToPosition.transform.position.z);
+                        selectedUnit.xPos = movePos.xPos;
+                        selectedUnit.yPos = movePos.yPos;
+                        stepsToMove--;
+                        selectedUnit.hasMoved = true;
+                    }
                 }
             }
             else if( selectedObject != null && hit.collider.GetComponent<Unit>() == selectedUnit && !selectedUnit.hasMoved)
@@ -90,9 +98,10 @@ public class PlayerController : MonoBehaviour
 
     public void RollDice()
     {
-        if(selectedUnit == null)
+        if(selectedUnit == null && hasRolled == false)
         {
             rolledNumber = Random.Range( 1, 7 );
+            hasRolled = true;
         }
 	}
 
@@ -100,4 +109,15 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log( "turn has been played" );
     }
+
+    public void OnTurnStart()
+    {
+        onTurnStart = true;
+        hasRolled = false;
+	}
+
+    public void CaptureUnit()
+    {
+        
+	}
 }
