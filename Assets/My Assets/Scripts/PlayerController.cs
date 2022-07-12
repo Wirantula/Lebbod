@@ -18,11 +18,12 @@ public class PlayerController : MonoBehaviour
     private MoveablePosition movePos;
     public Ray ray;
     public RaycastHit hit;
+    public MoveablePosition[] moveablePositions;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        moveablePositions = FindObjectsOfType<MoveablePosition>();
     }
 
     // Update is called once per frame
@@ -61,7 +62,7 @@ public class PlayerController : MonoBehaviour
             {
                 moveToPosition = hit.transform.gameObject;
                 movePos = hit.transform.GetComponent<MoveablePosition>();
-                if( (movePos.xPos - selectedUnit.xPos) + (movePos.yPos - selectedUnit.yPos) == 1 || ( movePos.xPos - selectedUnit.xPos ) + ( movePos.yPos - selectedUnit.yPos ) == -1 )
+                if( ( selectedUnit.xPos - movePos.xPos ) + ( selectedUnit.yPos - movePos.yPos ) == 1 || ( selectedUnit.xPos - movePos.xPos ) + ( selectedUnit.yPos - movePos.yPos ) == -1 )
                 {
                     if( selectedUnit.xPos + 1 == movePos.xPos || selectedUnit.xPos - 1 == movePos.xPos || selectedUnit.yPos + 1 == movePos.yPos || selectedUnit.yPos - 1 == movePos.yPos )
                     {
@@ -103,6 +104,14 @@ public class PlayerController : MonoBehaviour
             rolledNumber = Random.Range( 1, 7 );
             hasRolled = true;
         }
+
+        if(rolledNumber == chosenNumber && hasRolled == false)
+        {
+			foreach( MoveablePosition position in moveablePositions )
+			{
+                position.SwapOwner();
+			}
+		}
 	}
 
     public void EndTurn() 
