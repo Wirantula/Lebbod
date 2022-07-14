@@ -11,14 +11,16 @@ public class PlayerController : MonoBehaviour
     public int stepsToMove;
     public bool onTurnStart = false;
     public bool hasRolled = false;
+    public bool hasChosen = false;
     public GameObject[] ownedPieces;
     public GameObject selectedObject;
     private GameObject moveToPosition;
-    private Unit selectedUnit;
+    public Unit selectedUnit;
     private MoveablePosition movePos;
     public Ray ray;
     public RaycastHit hit;
     public MoveablePosition[] moveablePositions;
+    public TMP_InputField inputField;
 
     // Start is called before the first frame update
     void Start()
@@ -58,23 +60,45 @@ public class PlayerController : MonoBehaviour
         ray = Camera.main.ScreenPointToRay( Input.mousePosition );
         if(Physics.Raycast(ray.origin, ray.direction, out hit))
         {
-            if( selectedObject != null && hit.collider.GetComponent<MoveablePosition>() && stepsToMove > 0)
+            //move selected unit
+            if(( selectedObject != null && hit.collider.GetComponent<MoveablePosition>() && stepsToMove > 0)|| ( selectedObject != null && hit.collider.GetComponent<Unit>().owner != playerNumber && hit.collider.GetComponent<Unit>().currentPosition && stepsToMove > 0 ) )
             {
                 moveToPosition = hit.transform.gameObject;
-                movePos = hit.transform.GetComponent<MoveablePosition>();
-                if( ( selectedUnit.xPos - movePos.xPos ) + ( selectedUnit.yPos - movePos.yPos ) == 1 || ( selectedUnit.xPos - movePos.xPos ) + ( selectedUnit.yPos - movePos.yPos ) == -1 )
+                //check whether targeted is unit or position
+                if( hit.collider.GetComponent<MoveablePosition>() )
                 {
-                    if( selectedUnit.xPos + 1 == movePos.xPos || selectedUnit.xPos - 1 == movePos.xPos || selectedUnit.yPos + 1 == movePos.yPos || selectedUnit.yPos - 1 == movePos.yPos )
+                    movePos = hit.transform.GetComponent<MoveablePosition>();
+                }
+                else { movePos = hit.transform.GetComponent<Unit>().currentPosition; }
+                //check for possible movement in 1 positions each time
+                if( ((( selectedUnit.xPos - movePos.xPos ) == -1 && selectedUnit.yPos == movePos.yPos)|| (( selectedUnit.xPos - movePos.xPos ) == 1 && selectedUnit.yPos == movePos.yPos))|| ((( selectedUnit.yPos - movePos.yPos ) == -1 && selectedUnit.xPos == movePos.xPos)|| (( selectedUnit.yPos - movePos.yPos ) == 1 && selectedUnit.xPos == movePos.xPos)))
+                {
+                    if( !movePos.occupied )
                     {
                         onTurnStart = false;
-                        selectedObject.transform.position = new Vector3( moveToPosition.transform.position.x , selectedObject.transform.position.y, moveToPosition.transform.position.z);
-                        selectedUnit.xPos = movePos.xPos;
-                        selectedUnit.yPos = movePos.yPos;
+                        selectedObject.transform.position = new Vector3( moveToPosition.transform.position.x, selectedObject.transform.position.y, moveToPosition.transform.position.z );
                         stepsToMove--;
                         selectedUnit.hasMoved = true;
                     }
+                    else
+                    {
+                        if( movePos.occUnit.owner == playerNumber ) { Debug.Log( "Own Unit" ); return; }
+                        else if( movePos.owner == playerNumber && stepsToMove == 1 )
+                        {
+                            onTurnStart = false;
+                            selectedObject.transform.position = new Vector3( moveToPosition.transform.position.x, selectedObject.transform.position.y, moveToPosition.transform.position.z );
+                            stepsToMove--;
+                            selectedUnit.hasMoved = true;
+                            CaptureUnit();
+                        }
+                        else if( movePos.owner == playerNumber && stepsToMove != 1 )
+                        {
+                            Debug.Log( "Cant capture with moves left" );
+                        }
+                    }
                 }
             }
+            //unselect unit
             else if( selectedObject != null && hit.collider.GetComponent<Unit>() == selectedUnit && !selectedUnit.hasMoved)
             {
                 selectedUnit.selectionParticle.SetActive( false );
@@ -83,6 +107,7 @@ public class PlayerController : MonoBehaviour
                 moveToPosition = null;
                 movePos = null;
             }
+            //select unit
             else if( hit.collider.GetComponent<Unit>() )
             {
                 if( hit.collider.GetComponent<Unit>().owner == playerNumber )
@@ -104,14 +129,6 @@ public class PlayerController : MonoBehaviour
             rolledNumber = Random.Range( 1, 7 );
             hasRolled = true;
         }
-
-        if(rolledNumber == chosenNumber && hasRolled == false)
-        {
-			foreach( MoveablePosition position in moveablePositions )
-			{
-                position.SwapOwner();
-			}
-		}
 	}
 
     public void EndTurn() 
@@ -123,10 +140,32 @@ public class PlayerController : MonoBehaviour
     {
         onTurnStart = true;
         hasRolled = false;
+        hasChosen = false;
+	}
+
+    public void ChooseNumber()
+    {
+        if( hasChosen == false && hasRolled )
+        {
+            chosenNumber = int.Parse( inputField.text );
+            if( chosenNumber > 6 ) chosenNumber = 6;
+            if( chosenNumber < 1 ) chosenNumber = 1;
+            hasChosen = true;
+            //if chosen and rolled number are the same swap all board tiles
+            if( rolledNumber == chosenNumber && onTurnStart == true )
+            {
+                foreach( MoveablePosition position in moveablePositions )
+                {
+                    position.SwapOwner();
+                }
+            }
+        }
+        else if( hasChosen ) Debug.Log( "Already chose number" );
+        else Debug.Log( "Roll dice first" );
 	}
 
     public void CaptureUnit()
     {
-        
+        Debug.Log( "Captured unit" );
 	}
 }

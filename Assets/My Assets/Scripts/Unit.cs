@@ -10,6 +10,7 @@ public class Unit : MonoBehaviour
     public int yPos;
 	public bool hasMoved = false;
 	public GameObject selectionParticle;
+	public MoveablePosition currentPosition;
 
 	private void OnCollisionEnter( Collision collision )
 	{

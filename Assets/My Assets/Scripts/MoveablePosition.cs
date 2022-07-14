@@ -11,9 +11,14 @@ public class MoveablePosition : MonoBehaviour
 	public Material p1Mat;
 	public Material p2Mat;
 	public GameObject panel;
+	public Unit occUnit;
+	public Ray ray;
+	public RaycastHit hit;
 
 	private void Start()
 	{
+		ray.origin = new Vector3(transform.position.x, 0f, transform.position.z);
+		ray.direction = Vector3.up;
 		MeshRenderer getObject = GetComponentInChildren<MeshRenderer>();
 		panel = getObject.gameObject;
 		if( panel.GetComponent<Renderer>().material.name.Contains("P1"))
@@ -37,17 +42,26 @@ public class MoveablePosition : MonoBehaviour
 		}
 	}
 
-	private void OnCollisionStay( Collision collision )
+	private void Update()
 	{
-		if(collision.gameObject.GetComponent<Unit>())
-		{
-			occupied = true;
-		}
+		CheckAbove();
 	}
 
-	private void OnCollisionExit( Collision collision )
+	public void CheckAbove()
 	{
-		occupied = false;
+		Debug.DrawRay( ray.origin, ray.direction, Color.red );
+		if( Physics.Raycast( ray, out hit, 20f ) )
+		{
+			if( hit.transform.GetComponent<Unit>())
+			{
+				occUnit = hit.transform.GetComponent<Unit>();
+				occupied = true;
+				occUnit.currentPosition = this;
+				occUnit.xPos = xPos;
+				occUnit.yPos = yPos;
+			}
+			else { occupied = false; }
+		}
 	}
 
 }
