@@ -2,9 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using Photon.Pun;
+using Photon.Realtime;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Components")]
+    public GameObject[] ownedPieces;
+    public Player photonPlayer;
+
     public int playerNumber;
     public int chosenNumber;
     public int rolledNumber;
@@ -12,7 +18,6 @@ public class PlayerController : MonoBehaviour
     public bool onTurnStart = false;
     public bool hasRolled = false;
     public bool hasChosen = false;
-    public GameObject[] ownedPieces;
     public GameObject selectedObject;
     private GameObject moveToPosition;
     public Unit selectedUnit;
@@ -21,6 +26,14 @@ public class PlayerController : MonoBehaviour
     public RaycastHit hit;
     public MoveablePosition[] moveablePositions;
     public TMP_InputField inputField;
+    public TMP_Text diceRoll;
+    public TMP_Text steps;
+
+    [PunRPC]
+    public void Initialize()
+    {
+
+	}
 
     // Start is called before the first frame update
     void Start()
@@ -53,6 +66,8 @@ public class PlayerController : MonoBehaviour
             movePos = null;
             EndTurn();
         }
+
+        steps.text = "Steps to Move: " + stepsToMove;
     }
 
     private void OnClick()
@@ -127,6 +142,7 @@ public class PlayerController : MonoBehaviour
         if(selectedUnit == null && hasRolled == false)
         {
             rolledNumber = Random.Range( 1, 7 );
+            diceRoll.text = "Rolled number: " + rolledNumber;
             hasRolled = true;
         }
 	}
