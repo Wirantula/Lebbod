@@ -1,17 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using Photon.Pun;
 using Photon.Realtime;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviourPunCallbacks
 {
     [Header("Components")]
-    public GameObject[] ownedPieces;
+    [SerializeField]
+    public Unit[] allUnits;
     public Player photonPlayer;
 
-    public int playerNumber;
+    public int id;
     public int chosenNumber;
     public int rolledNumber;
     public int stepsToMove;
@@ -28,17 +30,47 @@ public class PlayerController : MonoBehaviour
     public TMP_InputField inputField;
     public TMP_Text diceRoll;
     public TMP_Text steps;
+    public Button rollDice;
+    public Button chooseNumber;
 
     [PunRPC]
-    public void Initialize()
+    public void Initialize(Player player)
     {
+        photonPlayer = player;
+        id = player.ActorNumber;
+        GameManager.instance.players[id -1] = this;
+        if( photonView.IsMine )
+        {
+            Button[] allButtons = FindObjectsOfType<Button>();
+			foreach( Button button in allButtons )
+			{
+                if( button.gameObject.name == "RollDice" ) rollDice = button;
+                if( button.gameObject.name == "ChooseNumber" ) chooseNumber = button;
+			}
+            rollDice.onClick.AddListener(delegate{ RollDice(); });
+            chooseNumber.onClick.AddListener( delegate { ChooseNumber(); } );
+        }
+    }
 
-	}
+    [PunRPC]
+    public void InitializeUnits()
+    {
+        //call gamemanager for units
+        GameManager.instance.EnableUnits( this );
+    }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
+        allUnits = GetComponentsInChildren<Unit>(true);
         moveablePositions = FindObjectsOfType<MoveablePosition>();
+        if(FindObjectOfType<TMP_InputField>().name == "NumberField" ) inputField = FindObjectOfType<TMP_InputField>();
+        TMP_Text[] allText = FindObjectsOfType<TMP_Text>();
+		foreach( TMP_Text text in allText )
+		{
+            if( text.gameObject.name == "DiceRoll" ) diceRoll = text;
+            if( text.gameObject.name == "StepsToMove" ) steps = text;
+        }
     }
 
     // Update is called once per frame
@@ -67,7 +99,7 @@ public class PlayerController : MonoBehaviour
             EndTurn();
         }
 
-        steps.text = "Steps to Move: " + stepsToMove;
+        steps.text = "Steps to move: " + stepsToMove;
     }
 
     private void OnClick()
@@ -76,7 +108,7 @@ public class PlayerController : MonoBehaviour
         if(Physics.Raycast(ray.origin, ray.direction, out hit))
         {
             //move selected unit
-            if(( selectedObject != null && hit.collider.GetComponent<MoveablePosition>() && stepsToMove > 0)|| ( selectedObject != null && hit.collider.GetComponent<Unit>().owner != playerNumber && hit.collider.GetComponent<Unit>().currentPosition && stepsToMove > 0 ) )
+            if(( selectedObject != null && hit.collider.GetComponent<MoveablePosition>() && stepsToMove > 0)|| ( selectedObject != null && hit.collider.GetComponent<Unit>().owner != id && hit.collider.GetComponent<Unit>().currentPosition && stepsToMove > 0 ) )
             {
                 moveToPosition = hit.transform.gameObject;
                 //check whether targeted is unit or position
@@ -97,8 +129,8 @@ public class PlayerController : MonoBehaviour
                     }
                     else
                     {
-                        if( movePos.occUnit.owner == playerNumber ) { Debug.Log( "Own Unit" ); return; }
-                        else if( movePos.owner == playerNumber && stepsToMove == 1 )
+                        if( movePos.occUnit.owner == id ) { Debug.Log( "Own Unit" ); return; }
+                        else if( movePos.owner == id && stepsToMove == 1 )
                         {
                             onTurnStart = false;
                             selectedObject.transform.position = new Vector3( moveToPosition.transform.position.x, selectedObject.transform.position.y, moveToPosition.transform.position.z );
@@ -106,7 +138,7 @@ public class PlayerController : MonoBehaviour
                             selectedUnit.hasMoved = true;
                             CaptureUnit();
                         }
-                        else if( movePos.owner == playerNumber && stepsToMove != 1 )
+                        else if( movePos.owner == id && stepsToMove != 1 )
                         {
                             Debug.Log( "Cant capture with moves left" );
                         }
@@ -125,7 +157,7 @@ public class PlayerController : MonoBehaviour
             //select unit
             else if( hit.collider.GetComponent<Unit>() )
             {
-                if( hit.collider.GetComponent<Unit>().owner == playerNumber )
+                if( hit.collider.GetComponent<Unit>().owner == id )
                 {
                     if( hit.collider.GetComponent<Unit>().pieceNumber == chosenNumber || hit.collider.GetComponent<Unit>().pieceNumber == rolledNumber )
                     {
@@ -150,13 +182,18 @@ public class PlayerController : MonoBehaviour
     public void EndTurn() 
     {
         Debug.Log( "turn has been played" );
+        GameManager.instance.photonView.RPC( "OnTurnEnded", RpcTarget.All, id);
     }
 
-    public void OnTurnStart()
+    [PunRPC]
+    public void OnTurnStart(int idToExecute)
     {
-        onTurnStart = true;
-        hasRolled = false;
-        hasChosen = false;
+        if( idToExecute == id )
+        {
+            onTurnStart = true;
+            hasRolled = false;
+            hasChosen = false;
+        }
 	}
 
     public void ChooseNumber()
