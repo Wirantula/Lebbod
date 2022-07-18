@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Photon.Pun;
+using Photon.Realtime;
 
-public class MoveablePosition : MonoBehaviour
+public class MoveablePosition : MonoBehaviourPunCallbacks
 {
 	public int xPos;
 	public int yPos;
@@ -28,6 +30,7 @@ public class MoveablePosition : MonoBehaviour
 		else { owner = 2; }
 	}
 
+	[PunRPC]
 	public void SwapOwner()
 	{
 		if(owner == 1)

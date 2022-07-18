@@ -8,12 +8,11 @@ using System.Linq;
 public class GameManager : MonoBehaviourPunCallbacks
 {
     public bool gameEnded = false;
-    public int playerTurn = 0;
-    public PlayerController[] players;
+    public List<PlayerController> players;
 	public string playerPrefabLocation;
 	public Transform spawnPoint;
 	private int playersInGame;
-	public bool startGame = true;
+	public bool firstTurn = true;
 
 	public static GameManager instance;
 
@@ -24,20 +23,19 @@ public class GameManager : MonoBehaviourPunCallbacks
 
 	private void Start()
 	{
-		players = new PlayerController[PhotonNetwork.PlayerList.Length];
+		//players = new PlayerController[PhotonNetwork.PlayerList.Length];
 		photonView.RPC( "ImInGame", RpcTarget.AllBuffered );
 	}
 
 	private void Update()
 	{
-		//if( startGame ) 
-		//{
-		//	foreach( PlayerController player in players )
-		//	{
-		//		players[playerTurn].photonView.RPC( "OnTurnStart", RpcTarget.All, players[playerTurn].id );
-		//	}
-		//	startGame = false;
-		//}
+
+	}
+
+	[PunRPC]
+	void GameHasBeenWon(int id)
+	{
+		gameEnded = true;
 	}
 
 	[PunRPC]
@@ -54,9 +52,29 @@ public class GameManager : MonoBehaviourPunCallbacks
 	[PunRPC]
 	void OnTurnEnded(int currentPlayer)
 	{
-		if( currentPlayer == 1 ) players[currentPlayer].photonView.RPC( "OnTurnStart", RpcTarget.All, players[currentPlayer].id );
-		if( currentPlayer == 2 ) players[0].photonView.RPC( "OnTurnStart", RpcTarget.All, players[0].id );
+		foreach( PlayerController item in players )
+		{
+			if( !firstTurn )
+			{
+				GetOtherPlayer( currentPlayer ).photonView.RPC( "OnTurnStart", RpcTarget.All, GetOtherPlayer( currentPlayer ).id );
+			}
+			if( firstTurn ) 
+			{
+				GetPlayer( 1 ).photonView.RPC( "OnTurnStart", RpcTarget.All, 1 );
+				firstTurn = false;
+			}
+		}
 	}
+
+	[PunRPC]
+	void UnitCapture( int playerWhoCaptured, int unitToCapture)
+	{
+		foreach( PlayerController item in players )
+		{
+			GetOtherPlayer( playerWhoCaptured ).photonView.RPC( "UnitGotCaptured", RpcTarget.All, unitToCapture);
+		}
+	}
+
 
 	void SpawnPlayer() 
 	{
@@ -75,26 +93,22 @@ public class GameManager : MonoBehaviourPunCallbacks
 
 	public PlayerController GetPlayer(int playerId)
 	{
-		PlayerController playerToGet = players.First( x => x.id == playerId );
-		return playerToGet;
+		return players.FirstOrDefault(x => x.id == playerId);
 	}
 
 	public PlayerController GetPlayer(GameObject playerObj)
 	{
-		PlayerController playerToGet = players.First( x => x.gameObject == playerObj );
-		return playerToGet;
+		return players.FirstOrDefault( x => x.gameObject == playerObj );
 	}
 
 	public PlayerController GetOtherPlayer( int playerId )
 	{
-		PlayerController playerToGet = players.First( x => x.id != playerId );
-		return playerToGet;
+		return players.FirstOrDefault( x => x.id != playerId );
 	}
 
 	public PlayerController GetOtherPlayer( GameObject playerObj )
 	{
-		PlayerController playerToGet = players.First( x => x.gameObject != playerObj );
-		return playerToGet;
+		return players.FirstOrDefault( x => x.gameObject != playerObj );
 	}
 
 	public void EnableUnits(PlayerController player)
@@ -102,6 +116,14 @@ public class GameManager : MonoBehaviourPunCallbacks
 		foreach( Unit unit in player.allUnits )
 		{
 			if( unit.owner == player.id ) unit.gameObject.SetActive( true );
+		}
+	}
+
+	public void DisableUnit(int unitToDisable, int playerId)
+	{
+		foreach( Unit unit in GetPlayer(playerId).allUnits )
+		{
+			if( unit.pieceNumber == unitToDisable ) unit.gameObject.SetActive( false );
 		}
 	}
 }
